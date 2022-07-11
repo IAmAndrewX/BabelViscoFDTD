@@ -263,9 +263,19 @@ public func GetThreadExecutionWidth(fun:UnsafeMutablePointer<CChar>, id:Int)-> U
     }
 }
 
+var indirectCommandBuffer:MTLIndirectCommandBuffer!
+
 @_cdecl("EncoderInit")
 public func EncoderInit(){
+    /*
     stress_commandBuffer = commandQueue.makeCommandBuffer()!
+    */
+    var icbDescriptor:MTLIndirectCommandBufferDescriptor = MTLIndirectCommandBufferDescriptor()
+
+    icbDescriptor.commandTypes.insert(MTLIndirectCommandType.concurrentDispatchThreads)
+    icbDescriptor.inheritBuffers = false
+    icbDescriptor.inheritPipelineState = false
+    indirectCommandBuffer = device.makeIndirectCommandBuffer(descriptor: icbDescriptor, maxCommandCount: 14)
 }
 
 @_cdecl("EncodeStress")
@@ -278,6 +288,18 @@ public func EncodeStress(fun:UnsafeRawPointer, i:UInt32, j:UInt32, k:UInt32, x:U
         break
         }
     } 
+    let icbCommand = indirectCommandBuffer.indirectComputeCommandAt(ind)
+    icbCommand.setKernelBuffer(constant_buffer_uint!, offset: 0, at: 0)
+    icbCommand.setKernelBuffer(constant_buffer_mex!, offset: 0, at: 1)
+    icbCommand.setKernelBuffer(index_mex!, offset: 0, at: 2)
+    icbCommand.setKernelBuffer(index_uint!, offset: 0, at: 3)
+    icbCommand.setKernelBuffer(uint_buffer!, offset: 0, at: 4)
+    for i in 0...11{
+        icbCommand.setKernelBuffer(mex_buffer[i]!, offset: 0, at: (5+i))
+    }
+    icbCommand.setComputePipelineState(stress_funcs[ind]!)
+    icbCommand.concurrentDispatchThreads(MTLSize(width: Int(i), height: Int(j), depth: Int(k)), threadsPerThreadgroup:MTLSize(width:Int(x), height: Int(y), depth: Int(z)))
+    /*
     let computeCommandEncoder = stress_commandBuffer.makeComputeCommandEncoder()!
     computeCommandEncoder.setBuffer(constant_buffer_uint, offset: 0, index: 0)
     computeCommandEncoder.setBuffer(constant_buffer_mex, offset: 0, index: 1)
@@ -290,6 +312,7 @@ public func EncodeStress(fun:UnsafeRawPointer, i:UInt32, j:UInt32, k:UInt32, x:U
     computeCommandEncoder.setComputePipelineState(stress_funcs[ind]!)
     computeCommandEncoder.dispatchThreadgroups(MTLSize(width: Int(i), height: Int(j), depth: Int(k)), threadsPerThreadgroup:MTLSize(width:Int(x), height: Int(y), depth: Int(z)))
     computeCommandEncoder.endEncoding()
+    */
 }
 
 @_cdecl("EncodeParticle")
@@ -302,6 +325,19 @@ public func EncodeParticle(fun:UnsafeRawPointer, i:UInt32, j:UInt32, k:UInt32, x
         break
         }
     }
+    let icbCommand = indirectCommandBuffer.indirectComputeCommandAt((index+7))
+    icbCommand.setKernelBuffer(constant_buffer_uint!, offset: 0, at: 0)
+    icbCommand.setKernelBuffer(constant_buffer_mex!, offset: 0, at: 1)
+    icbCommand.setKernelBuffer(index_mex!, offset: 0, at: 2)
+    icbCommand.setKernelBuffer(index_uint!, offset: 0, at: 3)
+    icbCommand.setKernelBuffer(uint_buffer!, offset: 0, at: 4)
+    for i in 0...11{
+        icbCommand.setKernelBuffer(mex_buffer[i]!, offset: 0, at: (5+i))
+    }
+    icbCommand.setComputePipelineState(particle_funcs[index]!)
+    icbCommand.concurrentDispatchThreads(MTLSize(width: Int(i), height: Int(j), depth: Int(k)), threadsPerThreadgroup:MTLSize(width:Int(x), height: Int(y), depth: Int(z)))
+
+    /*
     let computeCommandEncoder = stress_commandBuffer.makeComputeCommandEncoder()!
     computeCommandEncoder.setBuffer(constant_buffer_uint, offset: 0, index: 0)
     computeCommandEncoder.setBuffer(constant_buffer_mex, offset: 0, index: 1)
@@ -314,13 +350,21 @@ public func EncodeParticle(fun:UnsafeRawPointer, i:UInt32, j:UInt32, k:UInt32, x
     computeCommandEncoder.setComputePipelineState(particle_funcs[index]!)
     computeCommandEncoder.dispatchThreadgroups(MTLSize(width: Int(i), height: Int(j), depth: Int(k)), threadsPerThreadgroup:MTLSize(width:Int(x), height: Int(y), depth: Int(z)))
     computeCommandEncoder.endEncoding()
+    */
 }
 
 @_cdecl("EncodeCommit")
 public func EncodeCommit(){
+    let CommandBuffer = commandQueue.makeCommandBuffer()!
+    let computeCommandEncoder = CommandBuffer.makeComputeCommandEncoder()!
+    computeCommandEncoder.executeCommandsInBuffer(indirectCommandBuffer, range:0..<14) // Throwing an Error
+    computeCommandEncoder.endEncoding()
+    CommandBuffer.commit()        
+    CommandBuffer.waitUntilCompleted()
+    /*
     stress_commandBuffer.commit()
     stress_commandBuffer.waitUntilCompleted()
-
+    */
 }
 
 @_cdecl("CreateAndCopyFromMXVarOnGPUSnapShot")
@@ -411,4 +455,5 @@ public func freeGPUextern() {
     index_mex!.setPurgeableState(MTLPurgeableState.empty)
     index_uint!.setPurgeableState(MTLPurgeableState.empty)
     SnapShotsBuffer!.setPurgeableState(MTLPurgeableState.empty)
+    indirectCommandBuffer.setPurgeableState(MTLPurgeableState.empty)
 }

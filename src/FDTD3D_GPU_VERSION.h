@@ -790,13 +790,33 @@ InitSymbol(SensorStart,unsigned int,G_INT);
   unsigned int INHOST(nStep)=0;
   unsigned int SensorEntry=0;
 
+#ifdef METAL
+  EncoderInit();
+
+  ENCODE_STRESS(PML_1)
+  ENCODE_STRESS(PML_2)
+  ENCODE_STRESS(PML_3)
+  ENCODE_STRESS(PML_4)
+  ENCODE_STRESS(PML_5)
+  ENCODE_STRESS(PML_6)
+  ENCODE_STRESS(MAIN_1)
+    
+  ENCODE_PARTICLE(PML_1)
+  ENCODE_PARTICLE(PML_2)
+  ENCODE_PARTICLE(PML_3)
+  ENCODE_PARTICLE(PML_4)
+  ENCODE_PARTICLE(PML_5)
+  ENCODE_PARTICLE(PML_6)
+  ENCODE_PARTICLE(MAIN_1)
+#endif
+
 //%%%%%%%%%%%%% MAIN TEMPORAL LOOP %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 //%%%%%%%%%%%%% MAIN TEMPORAL LOOP %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 //%%%%%%%%%%%%% MAIN TEMPORAL LOOP %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   while(INHOST(nStep)<INHOST(TimeSteps))
 	{
-  // PRINTF("Step %i of %i\n",INHOST(nStep),INHOST(TimeSteps));
+  PRINTF("Step %i of %i\n",INHOST(nStep),INHOST(TimeSteps));
 #define CUDA_CALL(__KERNEL__,_IDSTREAM)\
    __KERNEL__ <<< dimGrid## __KERNEL__,dimBlock## __KERNEL__,0,streams[_IDSTREAM] >>> (pGPU,INHOST(nStep),INHOST(TypeSource));
 
@@ -846,24 +866,6 @@ InitSymbol(SensorStart,unsigned int,G_INT);
         InitSymbol(nStep,unsigned int,G_INT);
         InitSymbol(TypeSource,unsigned int,G_INT);
         InitSymbol(SelK,unsigned int,G_INT);
-
-        EncoderInit();
-
-        ENCODE_STRESS(PML_1)
-        ENCODE_STRESS(PML_2)
-        ENCODE_STRESS(PML_3)
-        ENCODE_STRESS(PML_4)
-        ENCODE_STRESS(PML_5)
-        ENCODE_STRESS(PML_6)
-        ENCODE_STRESS(MAIN_1)
-    
-        ENCODE_PARTICLE(PML_1)
-        ENCODE_PARTICLE(PML_2)
-        ENCODE_PARTICLE(PML_3)
-        ENCODE_PARTICLE(PML_4)
-        ENCODE_PARTICLE(PML_5)
-        ENCODE_PARTICLE(PML_6)
-        ENCODE_PARTICLE(MAIN_1)
         
         EncodeCommit();
 #endif
@@ -888,25 +890,6 @@ InitSymbol(SensorStart,unsigned int,G_INT);
   #if defined(METAL)
         InitSymbol(CurrSnap,unsigned int,G_INT);
         EncodeSnapShots((unsigned int)ceil((float)(INHOST(N1)+1) / 8), (unsigned int)ceil((float)(INHOST(N2)+1) / 8));
-        /*
-        mtlpp::CommandBuffer StresscommandBuffer = commandQueue.CommandBuffer();
-        mtlpp::ComputeCommandEncoder commandEncoderSnapShot = Strs, 0);
-        commandEncoderSnapShot.SetBuffer(_CONSTANT_BUFFER_MEX, 0, 1);
-        commandEncoderSnapShot.SetBuffer(_INDEX_MEX, 0, 2);
-        commandEncoderSnapShot.SetBuffer(_INDEX_UINT, 0, 3);
-        commandEncoderSnapShot.SetBuffer(_UINT_BUFFER, 0, 4);
-        for (_PT ii=0;ii<12;ii++)
-            commandEncoderSnapShot.SetBuffer(_MEX_BUFFER[ii], 0, 5+ii);
-        commandEncoderSnapShot.SetBuffer(gpu_Snapshots_pr, 0, 17);
-        commandEncoderSnapShot.SetComputePipelineState(computePipelineStateSnapShot);
-        commandEncoderSnapShot.DispatchThreadgroups(
-            mtlpp::Size(
-              (unsigned int)ceil((float)(INHOST(N1)+1) / 8),
-              (unsigned int)ceil((float)(INHOST(N2)+1) / 8),
-              1),
-            mtlpp::Size(8, 8,1));
-        commandEncoderSnapShot.EndEncoding();
-        */
   #endif
 
 				INHOST(CurrSnap)++;

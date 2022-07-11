@@ -4,12 +4,6 @@ from pathlib import Path
 import _FDTDStaggered3D_with_relaxation_METAL_single as FDTD_single;
 
 import time
-import tempfile
-from shutil import copyfile
-
-#we will generate the _kernel-opencl.c file when importing
-from distutils.sysconfig import get_python_inc
-
 
 def StaggeredFDTD_3D_METAL(arguments):
     os.environ['__BabelMetal'] =(os.path.dirname(os.path.abspath(__file__))+os.sep+'tools')
