@@ -97,7 +97,7 @@ public func InitializeMetalDevices(specDevice:UnsafeRawPointer, leng:Int) -> Int
         y +=  "_StressKernel"
         let stress_function = defaultLibrary.makeFunction(name: y)!
         let stress_descriptor = MTLComputePipelineDescriptor()
-        stress_descriptor.computeFunction = particle_function
+        stress_descriptor.computeFunction = stress_function
         stress_descriptor.supportIndirectCommandBuffers = true
         let stress_pipeline = try! device.makeComputePipelineState(descriptor: stress_descriptor, options: .init(), reflection: nil) //Adjust try
         stress_funcs.append(stress_pipeline)
@@ -346,27 +346,31 @@ public func EncodeCommit(){
 
     var computeDesc = MTLComputePassDescriptor()
     computeDesc.dispatchType = MTLDispatchType.serial
-    let CommandBuffer = commandQueue.makeCommandBuffer()!
-    print("Buffer made!")
+    
     // let blitCommandEncoderSync: MTLBlitCommandEncoder = CommandBuffer.makeBlitCommandEncoder()!
     // blitCommandEncoderSync.resetCommandsInBuffer(StressIndirectCommandBuffer, range:0..<7)
     // blitCommandEncoderSync.resetCommandsInBuffer(ParticleIndirectCommandBuffer, range:0..<7)
     // blitCommandEncoderSync.endEncoding()
 
 
-    let computeCommandEncoder = CommandBuffer.makeComputeCommandEncoder(descriptor:computeDesc)!
+   
     for i in 0..<7{
+        let CommandBuffer = commandQueue.makeCommandBuffer()!
+        let computeCommandEncoder = CommandBuffer.makeComputeCommandEncoder(descriptor:computeDesc)!
         computeCommandEncoder.executeCommandsInBuffer(StressIndirectCommandBuffers[i], range:0..<1) 
+        computeCommandEncoder.endEncoding()
+        CommandBuffer.commit()
+        CommandBuffer.waitUntilCompleted()
     }
     for i in 0..<7{
+        let CommandBuffer = commandQueue.makeCommandBuffer()!
+        let computeCommandEncoder = CommandBuffer.makeComputeCommandEncoder(descriptor:computeDesc)!
         computeCommandEncoder.executeCommandsInBuffer(ParticleIndirectCommandBuffers[i], range:0..<1)
+        computeCommandEncoder.endEncoding()
+        CommandBuffer.commit()
+        CommandBuffer.waitUntilCompleted()
     }
-    computeCommandEncoder.endEncoding()
-    print("Command Encoded!")
-    CommandBuffer.commit()
-    print("Command Committed!")
-    CommandBuffer.waitUntilCompleted()
-    print("Command Finished!")
+    
     /*
     stress_commandBuffer.commit()
     stress_commandBuffer.waitUntilCompleted()
