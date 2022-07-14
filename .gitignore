@@ -280,3 +280,11 @@ _gpu_kernel.c
 _indexing.h
 .vscode/settings.json
 .vscode/settings.json
+Min-Repo/metal.metallib
+Min-Repo/myModule.egg-info/dependency_links.txt
+Min-Repo/myModule.egg-info/PKG-INFO
+Min-Repo/myModule.egg-info/SOURCES.txt
+Min-Repo/myModule.egg-info/top_level.txt
+Min-Repo/metal.air
+Min-Repo/metal.air
+Min-Repo/metal.metallib

@@ -118,25 +118,25 @@ public func InitializeMetalDevices(specDevice:UnsafeRawPointer, leng:Int) -> Int
 public func ConstantBuffers(lenconstuint: Int, lenconstmex: Int) -> Int
 {
     var ll = MemoryLayout<UInt32>.stride * lenconstuint
-    constant_buffer_uint = device.makeBuffer(length: ll, options:MTLResourceOptions.storageModeManaged)
+    constant_buffer_uint = device.makeBuffer(length: ll, options:MTLResourceOptions.storageModeShared)
     ll = MemoryLayout<Float32>.stride * lenconstmex
-    constant_buffer_mex = device.makeBuffer(length: ll, options:MTLResourceOptions.storageModeManaged)
+    constant_buffer_mex = device.makeBuffer(length: ll, options:MTLResourceOptions.storageModeShared)
     return 0
 }
 
 @_cdecl("SymbolInitiation_uint")
 public func SymbolInitiation_uint(index: UInt32, data: UInt32) -> Int {
     constant_buffer_uint!.contents().advanced(by:(Int(index) * MemoryLayout<UInt32>.stride)).storeBytes(of:data, as:UInt32.self)
-    let r:Range = (Int(index) * MemoryLayout<UInt32>.stride)..<((Int(index) + 1)*MemoryLayout<UInt32>.stride)
-    constant_buffer_uint!.didModifyRange(r)
+    // let r:Range = (Int(index) * MemoryLayout<UInt32>.stride)..<((Int(index) + 1)*MemoryLayout<UInt32>.stride)
+    // constant_buffer_uint!.didModifyRange(r)
     return 0
 }
 
 @_cdecl("SymbolInitiation_mex")
 public func SymbolInitiation_mex(index: UInt32, data:Float32) -> Int{
     constant_buffer_mex!.contents().advanced(by:(Int(index) * MemoryLayout<Float32>.stride)).storeBytes(of:data, as:Float32.self)
-    let r:Range = (Int(index) * MemoryLayout<Float32>.stride)..<((Int(index) + 1)*MemoryLayout<Float32>.stride)
-    constant_buffer_mex!.didModifyRange(r)
+    // let r:Range = (Int(index) * MemoryLayout<Float32>.stride)..<((Int(index) + 1)*MemoryLayout<Float32>.stride)
+    // constant_buffer_mex!.didModifyRange(r)
     return 0
 }
 
@@ -145,23 +145,23 @@ public func BufferIndexCreator(c_mex_type:UnsafeMutablePointer<UInt64>, c_uint_t
     // Empties mex_buffer array so that there is no undefined behaviour from reading a released array between consecutive runs of the program.
     mex_buffer = []
     var ll = MemoryLayout<UInt64>.stride * 12
-    let c_mex_buffer:MTLBuffer? = device.makeBuffer(bytes:c_mex_type, length: ll, options:MTLResourceOptions.storageModeManaged)
+    let c_mex_buffer:MTLBuffer? = device.makeBuffer(bytes:c_mex_type, length: ll, options:MTLResourceOptions.storageModeShared)
     let c_mex_array = UnsafeBufferPointer(start: c_mex_buffer!.contents().assumingMemoryBound(to: UInt64.self), count: 12)
     for i in (0...11) {
         ll = MemoryLayout<Float32>.stride * Int(c_mex_array[i])
-        let temp:MTLBuffer? = device.makeBuffer(length: ll, options:MTLResourceOptions.storageModeManaged)
+        let temp:MTLBuffer? = device.makeBuffer(length: ll, options:MTLResourceOptions.storageModeShared)
         mex_buffer.append(temp)
         mex_array.append(c_mex_array[i])
     }
     c_mex_buffer!.setPurgeableState(MTLPurgeableState.empty)
     ll = MemoryLayout<UInt32>.stride * Int(c_uint_type)
-    uint_buffer = device.makeBuffer(length:ll, options:MTLResourceOptions.storageModeManaged)
+    uint_buffer = device.makeBuffer(length:ll, options:MTLResourceOptions.storageModeShared)
 
     ll = MemoryLayout<UInt32>.stride * Int(length_index_mex) * 2
-    index_mex = device.makeBuffer(length:ll, options:MTLResourceOptions.storageModeManaged)
+    index_mex = device.makeBuffer(length:ll, options:MTLResourceOptions.storageModeShared)
     
     ll = MemoryLayout<UInt32>.stride * Int(length_index_uint) * 2
-    index_uint = device.makeBuffer(length:ll, options:MTLResourceOptions.storageModeManaged)
+    index_uint = device.makeBuffer(length:ll, options:MTLResourceOptions.storageModeShared)
     
     return 0
 }
@@ -184,14 +184,14 @@ public func IndexManipUInt(data:UInt32, data2:UInt32, index:UInt32) -> Int{
 }
 @_cdecl("IndexDidModify")
 public func IndexDidModify(lenind_mex:UInt64, lenind_uint:UInt64, lenconstmex:UInt64, lenconstuint:UInt64){
-    var r:Range = 0 ..< (Int(lenind_mex) * 2 ) * MemoryLayout<UInt32>.stride
-    index_mex!.didModifyRange(r)
-    r = 0 ..< (Int(lenind_uint) * 2 ) * MemoryLayout<UInt32>.stride
-    index_uint!.didModifyRange(r)
-    r = 0 ..< (Int(lenconstuint) ) * MemoryLayout<UInt32>.stride
-    constant_buffer_uint!.didModifyRange(r)
-    r = 0 ..< (Int(lenconstmex) ) * MemoryLayout<Float32>.stride
-    constant_buffer_mex!.didModifyRange(r)
+    // var r:Range = 0 ..< (Int(lenind_mex) * 2 ) * MemoryLayout<UInt32>.stride
+    // index_mex!.didModifyRange(r)
+    // r = 0 ..< (Int(lenind_uint) * 2 ) * MemoryLayout<UInt32>.stride
+    // index_uint!.didModifyRange(r)
+    // r = 0 ..< (Int(lenconstuint) ) * MemoryLayout<UInt32>.stride
+    // constant_buffer_uint!.didModifyRange(r)
+    // r = 0 ..< (Int(lenconstmex) ) * MemoryLayout<Float32>.stride
+    // constant_buffer_mex!.didModifyRange(r)
 }
 
 @_cdecl("CompleteCopyMEX")
@@ -199,8 +199,8 @@ public func CompleteCopyMEX(size:Int, ptr:UnsafeMutablePointer<Float32>, ind:UIn
 {
     let ll = size * MemoryLayout<Float32>.stride
     mex_buffer[Int(buff)]!.contents().advanced(by:(Int(ind) * MemoryLayout<Float32>.stride)).copyMemory(from: ptr, byteCount:ll)
-    let r : Range = (Int(ind) * MemoryLayout<Float32>.stride)..<((Int(ind) * MemoryLayout<Float32>.stride) + ll )
-    mex_buffer[Int(buff)]!.didModifyRange(r)
+    // let r : Range = (Int(ind) * MemoryLayout<Float32>.stride)..<((Int(ind) * MemoryLayout<Float32>.stride) + ll )
+    // mex_buffer[Int(buff)]!.didModifyRange(r)
     return 0
 }
 
@@ -209,8 +209,8 @@ public func CompleteCopyUInt(size:Int, ptr:UnsafeMutablePointer<UInt32>, ind:UIn
 {
     let ll = size * MemoryLayout<UInt32>.stride
     uint_buffer!.contents().advanced(by:(Int(ind) * MemoryLayout<UInt32>.stride)).copyMemory(from: ptr, byteCount:ll)
-    let r : Range = (Int(ind) * MemoryLayout<UInt32>.stride)..<(Int(ind) * MemoryLayout<UInt32>.stride+ll)
-    uint_buffer!.didModifyRange(r)
+    // let r : Range = (Int(ind) * MemoryLayout<UInt32>.stride)..<(Int(ind) * MemoryLayout<UInt32>.stride+ll)
+    // uint_buffer!.didModifyRange(r)
     return 0
 }
 
@@ -220,16 +220,16 @@ public func GetFloatEntries(c_mex_type: UnsafeMutablePointer<UInt64>, c_uint_typ
     // This bit of code ensures that any errors in values due to CPU/GPU desynchronization is caught
     floatCounter = 0
     var ll = MemoryLayout<UInt64>.stride * 12
-    let c_mex_buffer:MTLBuffer? = device.makeBuffer(bytes:c_mex_type, length: ll, options:MTLResourceOptions.storageModeManaged)
+    let c_mex_buffer:MTLBuffer? = device.makeBuffer(bytes:c_mex_type, length: ll, options:MTLResourceOptions.storageModeShared)
     let c_mex_array = UnsafeBufferPointer(start: c_mex_buffer!.contents().assumingMemoryBound(to: UInt64.self), count: 12)
     for i in (0...11) {
-        var r:Range = 0 ..< (Int(c_mex_array[i])) * MemoryLayout<Float32>.stride
-        mex_buffer[i]!.didModifyRange(r)
+        // var r:Range = 0 ..< (Int(c_mex_array[i])) * MemoryLayout<Float32>.stride
+        // mex_buffer[i]!.didModifyRange(r)
         floatCounter += Int(c_mex_array[i]) 
     }
     c_mex_buffer!.setPurgeableState(MTLPurgeableState.empty)
-    var r:Range = 0 ..< (Int(c_uint_type) ) * MemoryLayout<UInt32>.stride
-    uint_buffer!.didModifyRange(r)
+    // var r:Range = 0 ..< (Int(c_uint_type) ) * MemoryLayout<UInt32>.stride
+    // uint_buffer!.didModifyRange(r)
     return UInt64(floatCounter)
 }
 
@@ -279,9 +279,9 @@ public func EncoderInit(){
     stress_commandBuffer = commandQueue.makeCommandBuffer()!
     */
     var icbDescriptor:MTLIndirectCommandBufferDescriptor = MTLIndirectCommandBufferDescriptor()
-    for i in 0..<7{
+    // for i in 0..<7{
     icbDescriptor.commandTypes.insert(MTLIndirectCommandType.concurrentDispatchThreads)
-    }
+    // }
     icbDescriptor.inheritBuffers = false
     icbDescriptor.inheritPipelineState = false
     icbDescriptor.maxKernelBufferBindCount = 17
@@ -370,9 +370,17 @@ public func EncodeParticle(fun:UnsafeRawPointer, i:UInt32, j:UInt32, k:UInt32, x
 
 @_cdecl("EncodeCommit")
 public func EncodeCommit(){
+
     var computeDesc = MTLComputePassDescriptor()
     computeDesc.dispatchType = MTLDispatchType.serial
     let CommandBuffer = commandQueue.makeCommandBuffer()!
+
+    // let blitCommandEncoderSync: MTLBlitCommandEncoder = CommandBuffer.makeBlitCommandEncoder()!
+    // blitCommandEncoderSync.resetCommandsInBuffer(StressIndirectCommandBuffer, range:0..<7)
+    // blitCommandEncoderSync.resetCommandsInBuffer(ParticleIndirectCommandBuffer, range:0..<7)
+    // blitCommandEncoderSync.endEncoding()
+
+
     let computeCommandEncoder = CommandBuffer.makeComputeCommandEncoder(descriptor:computeDesc)!
     computeCommandEncoder.executeCommandsInBuffer(StressIndirectCommandBuffer, range:0..<7) 
     computeCommandEncoder.executeCommandsInBuffer(ParticleIndirectCommandBuffer, range:0..<7)
@@ -389,7 +397,7 @@ public func EncodeCommit(){
 public func CreateAndCopyFromMXVarOnGPUSnapShot(numElements:Int, data:UnsafeMutablePointer<Float32>)
 {
     let ll =  numElements * MemoryLayout<Float32>.stride
-    SnapShotsBuffer = device.makeBuffer(bytes:data, length: ll, options: MTLResourceOptions.storageModeManaged)
+    SnapShotsBuffer = device.makeBuffer(bytes:data, length: ll, options: MTLResourceOptions.storageModeShared)
 }
 
 @_cdecl("EncodeSnapShots")
@@ -431,15 +439,15 @@ public func EncodeSensors(i:UInt32, j:UInt32, k:UInt32, x:UInt32, y:UInt32, z:UI
 
 @_cdecl("SyncChange")
 public func SyncChange(){
-    let commandBufferSync = commandQueue.makeCommandBuffer()!
-    let blitCommandEncoderSync: MTLBlitCommandEncoder = commandBufferSync.makeBlitCommandEncoder()!
-    for i in 0...11{
-        blitCommandEncoderSync.synchronize(resource: mex_buffer[i]!) 
-    }
-    blitCommandEncoderSync.endEncoding()
-    commandBufferSync.commit()
-    commandBufferSync.waitUntilCompleted()
-    print("GPU and CPU Synced!")
+    // let commandBufferSync = commandQueue.makeCommandBuffer()!
+    // let blitCommandEncoderSync: MTLBlitCommandEncoder = commandBufferSync.makeBlitCommandEncoder()!
+    // for i in 0...11{
+    //     blitCommandEncoderSync.synchronize(resource: mex_buffer[i]!) 
+    // }
+    // blitCommandEncoderSync.endEncoding()
+    // commandBufferSync.commit()
+    // commandBufferSync.waitUntilCompleted()
+    // print("GPU and CPU Synced!")
 }
 
 @_cdecl("CopyFromGPUMEX")
